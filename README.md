@@ -129,50 +129,57 @@
 
 ## 环境要求
 
-### Docker 模式
+### Docker 模式（仅前后端）
 - Docker Desktop 20.10+
 - Docker Compose v2.0+
 
-### 本地开发模式
+### 本地开发模式（推荐）
 - Java 17 或更高版本
 - Node.js 18 或更高版本
 - Maven 3.6+
-- MySQL 8.0
+- MySQL 8.4（本地安装）
 
 ## 快速启动
 
-### 方式一：使用 Docker Compose（推荐）
+### 方式一：本地开发模式（推荐）
 
-```bash
-# 进入项目根目录
-cd "d:\Users\yang\杨嘉兴\毕业设计\基于图论的反应路径网络可视化系统"
-
-# 启动所有服务（指定项目名避免中文路径问题）
-docker compose -p reaction_system up -d --build
-
-# 查看日志
-docker compose -p reaction_system logs -f
-```
-
-### 方式二：本地开发模式
-
-#### 1. 启动 MySQL
-确保 MySQL 8.0 已运行，并创建数据库：
+#### 1. 启动 MySQL 数据库
+确保本地 MySQL 8.0 已运行，并创建数据库：
 ```sql
+-- 连接到 MySQL
+mysql -u root -p
+
+-- 创建数据库
 CREATE DATABASE IF NOT EXISTS reaction_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 导入初始化数据（可选）
+-- source init.sql;
 ```
 
-#### 2. 启动后端
+#### 2. 启动后端服务
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-#### 3. 启动前端
+#### 3. 启动前端服务
 ```bash
 cd frontend
 npm install
 npm run dev
+```
+
+### 方式二：使用 Docker Compose（仅前后端）
+
+```bash
+# 进入项目根目录
+cd "d:\Users\yang\杨嘉兴\毕业设计\基于图论的反应路径网络可视化系统"
+
+# 启动前后端服务（数据库需本地运行）
+docker compose -p reaction_system up -d --build
+
+# 查看日志
+docker compose -p reaction_system logs -f
 ```
 
 ## 访问地址
@@ -181,21 +188,21 @@ npm run dev
 
 - **前端界面**: http://localhost:5173
 - **后端 API**: http://localhost:8080/api
-- **数据库**: localhost:3306 (用户名: root, 密码: root)
+- **数据库**: localhost:3306 (用户名: root, 密码: root) - 本地 MySQL 实例
 
 ---
 
 ## 📋 系统要求
 
-### Docker 模式
+### Docker 模式（仅前后端）
 - Docker Desktop 20.10+
 - Docker Compose v2.0+
 
-### 本地开发模式
+### 本地开发模式（推荐）
 - Java 17 或更高版本
 - Node.js 18 或更高版本
 - Maven 3.6+
-- MySQL 8.0
+- MySQL 8.4（本地安装）
 
 ---
 
@@ -210,7 +217,7 @@ docker run -d \
   -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD=root \
   -e MYSQL_DATABASE=reaction_system \
-  mysql:8.0
+  mysql:8.4
 ```
 
 ### 2. 启动后端
