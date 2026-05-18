@@ -43,16 +43,51 @@
                 <el-button type="primary" @click="findShortestPath">
                   BFS 最短路径
                 </el-button>
-                <el-button type="success" @click="findLowestEnergyPath">
-                  Dijkstra 最低能量
+                <el-button type="success" @click="findAllOptimizedPaths">
+                  Dijkstra 多目标优化
                 </el-button>
                 <el-button type="info" @click="resetVisualization">
                   重置
                 </el-button>
               </div>
-              <div v-if="pathResult" class="path-result">
-                <p><strong>路径：</strong> {{ pathResult.path.join(' → ') }}</p>
-                <p><strong>路径长度：</strong> {{ pathResult.length }} 个节点</p>
+
+              <div v-if="bfsPathResult" class="path-result">
+                <h4>BFS 最短路径结果：</h4>
+                <p><strong>路径：</strong> {{ getPathDisplay(bfsPathResult.path) }}</p>
+                <p><strong>路径长度：</strong> {{ bfsPathResult.length }} 个节点</p>
+              </div>
+
+              <div v-if="multiPathResults && multiPathResults.length > 0" class="paths-result">
+                <h4>找到 {{ multiPathResults.length }} 条优化路径：</h4>
+                <el-collapse v-model="activePathNames" accordion>
+                  <el-collapse-item 
+                    v-for="(pathResult, index) in multiPathResults" 
+                    :key="index" 
+                    :name="String(index)"
+                  >
+                    <template #title>
+                      <div class="path-title">
+                        <el-tag :type="getPathTagType(pathResult.optimizationType)" size="small">
+                          {{ pathResult.optimizationType }}
+                        </el-tag>
+                        <span class="path-steps">{{ pathResult.steps }} 步</span>
+                      </div>
+                    </template>
+                    <div class="path-detail">
+                      <p><strong>路径：</strong> {{ getPathDisplay(pathResult.path) }}</p>
+                      <p><strong>步数：</strong> {{ pathResult.steps }} 步</p>
+                      <p><strong>总能量变化：</strong> {{ pathResult.totalEnergyChange }} kJ/mol</p>
+                      <p><strong>总活化能：</strong> {{ pathResult.totalActivationEnergy }} kJ/mol</p>
+                      <el-button 
+                        type="primary" 
+                        size="small" 
+                        @click="highlightPath(pathResult.path, pathResult.optimizationType)"
+                      >
+                        高亮此路径
+                      </el-button>
+                    </div>
+                  </el-collapse-item>
+                </el-collapse>
               </div>
             </el-card>
           </div>
@@ -83,10 +118,18 @@ let chart = null
 
 const startNodeId = ref(null)
 const endNodeId = ref(null)
-const pathResult = ref(null)
+const bfsPathResult = ref(null)
+const multiPathResults = ref([])
+const activePathNames = ref([])
 
 const compounds = ref([])
 const paths = ref([])
+
+const pathColors = {
+  '步数最少': 'rgba(255, 64, 64, 1)',
+  '能量变化最低': '#67c23a',
+  '活化能最低': '#e6a23c'
+}
 
 onMounted(async () => {
   await fetchData()
@@ -125,7 +168,6 @@ const initChart = () => {
 const updateChart = () => {
   if (!chart) return
 
-  // Build nodes
   const nodes = compounds.value.map(compound => ({
     id: String(compound.id),
     name: compound.name,
@@ -133,7 +175,6 @@ const updateChart = () => {
     itemStyle: { color: '#409eff' }
   }))
 
-  // Build links
   const links = paths.value.map(path => ({
     source: String(path.fromCompoundId),
     target: String(path.toCompoundId),
@@ -207,8 +248,10 @@ const findShortestPath = async () => {
       endNodeId.value
     )
     if (response.code === 200) {
-      pathResult.value = response.data
-      highlightPath(response.data.path)
+      bfsPathResult.value = response.data
+      multiPathResults.value = []
+      ElMessage.success(`找到最短路径，共 ${response.data.length} 个节点`)
+      highlightPath(response.data.path, '步数最少')
     } else {
       ElMessage.error('未找到路径')
     }
@@ -217,31 +260,56 @@ const findShortestPath = async () => {
   }
 }
 
-const findLowestEnergyPath = async () => {
+const findAllOptimizedPaths = async () => {
   if (!startNodeId.value || !endNodeId.value) {
     ElMessage.warning('请先选择起始节点和终点节点')
     return
   }
 
   try {
-    const response = await reactionPathAPI.findLowestEnergyPath(
+    const response = await reactionPathAPI.findAllOptimizedPaths(
       startNodeId.value,
       endNodeId.value
     )
-    if (response.code === 200) {
-      pathResult.value = response.data
-      highlightPath(response.data.path)
+    if (response.code === 200 && response.data && response.data.paths) {
+      multiPathResults.value = response.data.paths
+      if (response.data.paths.length > 0) {
+        activePathNames.value = ['0']
+      }
+      ElMessage.success(`找到 ${response.data.paths.length} 条优化路径`)
     } else {
       ElMessage.error('未找到路径')
     }
   } catch (error) {
-    ElMessage.error('查找最低能量路径失败')
+    ElMessage.error('查找优化路径失败')
   }
 }
 
-const highlightPath = (pathNodes) => {
+const getPathTagType = (optimizationType) => {
+  switch (optimizationType) {
+    case '步数最少':
+      return 'primary'
+    case '能量变化最低':
+      return 'success'
+    case '活化能最低':
+      return 'warning'
+    default:
+      return 'info'
+  }
+}
+
+const getPathDisplay = (pathNodes) => {
+  const compoundMap = {}
+  compounds.value.forEach(c => {
+    compoundMap[c.id] = c.name
+  })
+  return pathNodes.map(id => compoundMap[id] || `ID:${id}`).join(' → ')
+}
+
+const highlightPath = (pathNodes, optimizationType) => {
   if (!chart) return
 
+  const color = pathColors[optimizationType] || '#f56c6c'
   const normalizedPath = pathNodes.map(String)
 
   const nodes = compounds.value.map(compound => {
@@ -252,7 +320,7 @@ const highlightPath = (pathNodes) => {
       name: compound.name,
       symbolSize: inPath ? 50 : 40,
       itemStyle: {
-        color: inPath ? '#f56c6c' : '#409eff'
+        color: inPath ? color : '#409eff'
       }
     }
   })
@@ -266,8 +334,8 @@ const highlightPath = (pathNodes) => {
       target,
       label: { content: path.reactionType || '' },
       lineStyle: {
-        width: active ? 3 : 1,
-        color: active ? '#f56c6c' : '#999'
+        width: active ? 4 : 1,
+        color: active ? color : '#999'
       }
     }
   })
@@ -276,6 +344,8 @@ const highlightPath = (pathNodes) => {
   option.series[0].nodes = nodes
   option.series[0].links = links
   chart.setOption(option)
+
+  ElMessage.success(`已高亮"${optimizationType}"路径`)
 }
 
 const isPathEdge = (source, target, pathNodes) => {
@@ -288,7 +358,9 @@ const isPathEdge = (source, target, pathNodes) => {
 }
 
 const resetVisualization = () => {
-  pathResult.value = null
+  bfsPathResult.value = null
+  multiPathResults.value = []
+  activePathNames.value = []
   startNodeId.value = null
   endNodeId.value = null
   updateChart()
@@ -353,8 +425,8 @@ const handleLogout = () => {
 }
 
 .controls-panel {
-  width: 320px;
-  min-width: 320px;
+  width: 400px;
+  min-width: 400px;
   overflow-y: auto;
   align-self: flex-start;
 }
@@ -382,25 +454,60 @@ const handleLogout = () => {
 .button-group {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 10px;
   margin-top: 20px;
 }
 
 .button-group .el-button {
-  width: 100% !important;
-  justify-content: center;
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  line-height: 48px !important;
+  justify-content: center !important;
+  padding: 0 20px !important;
+  font-size: 14px !important;
+  font-weight: normal !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  border-radius: 4px !important;
+  border: none !important;
 }
 
-.path-result {
-  background-color: #f0f9ff;
-  border: 1px solid #b3d8ff;
-  border-radius: 4px;
-  padding: 12px;
+.paths-result {
   margin-top: 20px;
-  font-size: 12px;
 }
 
-.path-result p {
-  margin: 8px 0;
+.paths-result h4 {
+  margin: 0 0 12px 0;
+  color: #303133;
+}
+
+.path-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.path-steps {
+  color: #606266;
+  font-size: 13px;
+}
+
+.path-detail {
+  padding: 10px 0;
+}
+
+.path-detail p {
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.path-detail .el-button {
+  margin-top: 10px;
 }
 </style>

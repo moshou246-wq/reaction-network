@@ -134,4 +134,22 @@ public class ReactionPathController {
             return ApiResponse.error("Find lowest energy path failed: " + e.getMessage());
         }
     }
+    
+    /**
+     * 查找所有优化路径（多目标优化）
+     * 返回：步数最少、能量变化最低、活化能最低三条路径
+     */
+    @GetMapping("/all-optimized-paths")
+    public ApiResponse<GraphAlgorithm.MultiPathResult> findAllOptimizedPaths(
+            @RequestParam Long startId,
+            @RequestParam Long endId) {
+        try {
+            List<ReactionPath> allPaths = reactionPathService.getAllReactionPaths();
+            GraphAlgorithm.MultiPathResult result = GraphAlgorithm.findAllOptimizedPaths(startId, endId, allPaths);
+            
+            return ApiResponse.success("Find all optimized paths successful", result);
+        } catch (Exception e) {
+            return ApiResponse.error("Find all optimized paths failed: " + e.getMessage());
+        }
+    }
 }

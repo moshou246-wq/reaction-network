@@ -119,6 +119,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { ElMessage } from 'element-plus'
+import { compoundAPI, reactionPathAPI } from '../api/index'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -131,8 +132,26 @@ const stats = ref({
   algorithms: 2
 })
 
+const fetchStats = async () => {
+  try {
+    const [compoundsRes, pathsRes] = await Promise.all([
+      compoundAPI.getAllCompounds(),
+      reactionPathAPI.getAllReactionPaths()
+    ])
+
+    if (compoundsRes.code === 200) {
+      stats.value.compounds = compoundsRes.data.length
+    }
+    if (pathsRes.code === 200) {
+      stats.value.paths = pathsRes.data.length
+    }
+  } catch (error) {
+    console.error('获取统计数据失败:', error)
+  }
+}
+
 onMounted(() => {
-  // TODO: Fetch real statistics from backend
+  fetchStats()
 })
 
 const handleLogout = () => {
@@ -255,9 +274,12 @@ const handleLogout = () => {
 .feature-card {
   background: white;
   border-radius: 8px;
-  padding: 20px;
+  padding: 24px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .feature-card:hover {
@@ -267,15 +289,20 @@ const handleLogout = () => {
 
 .feature-card h4 {
   color: #333;
-  margin: 0 0 10px 0;
+  margin: 0 0 12px 0;
   font-size: 16px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 .feature-card p {
   color: #666;
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
 }
 
 .margin-top {

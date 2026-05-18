@@ -61,5 +61,10 @@ export const reactionPathAPI = {
     return apiClient.get('/reaction-paths/lowest-energy-path', {
       params: { startId, endId }
     })
+  },
+  findAllOptimizedPaths(startId, endId) {
+    return apiClient.get('/reaction-paths/all-optimized-paths', {
+      params: { startId, endId }
+    })
   }
 }
