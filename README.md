@@ -181,8 +181,26 @@ docker compose -p reaction_system up -d --build
 # 查看日志
 docker compose -p reaction_system logs -f
 ```
+### 方式三：使用 Docker Compose（一键运行）（26.5.19版本已将MySQL内置docker，可一键运行，无需配置）【26.5.19推荐】
+【前提：安装docker desktop】无需注册登录，安装完会重启一下电脑
+安装之后要更新一下 wsl --update（打开docker会提示）
+```bash
+# 进入项目根目录
+cd "d:\Users\yang\杨嘉兴\毕业设计\基于图论的反应路径网络可视化系统"
 
-## 访问地址
+# 一键启动服务
+docker-compose up -d
+
+## 访问地址（docker内置MySQL，一键运行）
+启动成功后，访问以下地址：
+- **前端界面**: http://localhost
+- **后端 API**: http://localhost:8080
+# 登录
+账号：admin/user
+密码：password
+/*******************************************************************************/
+
+## 访问地址（本地自建MySQL）
 
 启动成功后，访问以下地址：
 
