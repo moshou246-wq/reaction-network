@@ -1,3 +1,7 @@
+-- 设置字符集
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+
 -- 禁用外键检查
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -59,8 +63,8 @@ CREATE TABLE IF NOT EXISTS `reaction_paths` (
 -- ============================================
 INSERT INTO `users` (`id`, `username`, `password`, `email`, `real_name`, `status`) 
 VALUES 
-(1, 'admin', '$2a$10$tp07kZG/QUcW2uzeVQjTSeZx5.JjQuCBffGkky5Zip4kChhhmFJp2', 'admin@example.com', 'Administrator', 1),
-(2, 'user', '$2a$10$tp07kZG/QUcW2uzeVQjTSeZx5.JjQuCBffGkky5Zip4kChhhmFJp2', 'user@example.com', 'Test User', 1);
+(1, 'admin', '$2a$10$4yzxDRmSlNs4uC5XFSd27.IaSCdKR8MaGuhJobXIKhNC1OpjKpEO.', 'admin@example.com', 'Administrator', 1),
+(2, 'user', '$2a$10$4yzxDRmSlNs4uC5XFSd27.IaSCdKR8MaGuhJobXIKhNC1OpjKpEO.', 'user@example.com', 'Test User', 1);
 
 -- ============================================
 -- 插入化合物数据（真实化学物质）
